@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <cstring>
 using namespace std;
 
 class BigInt {
@@ -125,5 +126,73 @@ public:
         return temp;
     }
 
+    
+    BigInt &operator+=(const BigInt &b) {
+        int t = 0, s, i;
+        int n = length(), m = b.length();
+
+        if (m > n)
+            digits.append(m - n, 0);
+
+        n = length(); // Update length after appending zeros
+
+        for (i = 0; i < n; i++) {
+            if (i < m)
+                s = (digits[i] + b.digits[i]) + t;
+            else
+                s = digits[i] + t;
+
+            t = s / 10;
+            digits[i] = (s % 10);
+        }
+
+        if (t)
+            digits.push_back(t);
+
+        return *this;
+    }
+
+    BigInt operator+(const BigInt &b) const {
+        BigInt temp = *this;
+        temp += b;
+        return temp;
+    }
+
+    BigInt &operator-=(const BigInt &b) {
+        if (*this < b)
+            throw("UNDERFLOW");
+
+        int n = length(), m = b.length();
+        int i, t = 0, s;
+
+        for (i = 0; i < n; i++) {
+            if (i < m)
+                s = digits[i] - b.digits[i] + t;
+            else
+                s = digits[i] + t;
+
+            if (s < 0)
+                s += 10, t = -1;
+            else
+                t = 0;
+
+            digits[i] = s;
+        }
+
+        while (n > 1 && digits[n - 1] == 0)
+            digits.pop_back(), n--;
+
+        return *this;
+    }
+
+    BigInt operator-(const BigInt &b) const {
+        BigInt temp = *this;
+        temp -= b;
+        return temp;
+    }
+
 };
 
+int main(){
+    
+}
