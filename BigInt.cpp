@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+#include <vector>
 using namespace std;
 
 class BigInt {
@@ -190,6 +191,54 @@ public:
         temp -= b;
         return temp;
     }
+
+    // --- Multiplication Operators ---
+    // In-place multiplication: this = this * b
+    BigInt &operator*=(const BigInt &b) {
+        // If either operand is 0, result is 0.
+        if (this->isNull() || b.isNull()) {
+            *this = BigInt();
+            return *this;
+        }
+
+        int n = digits.size(), m = b.digits.size();
+        // Temporary vector to store multiplication result; size n + m is sufficient.
+        vector<int> v(n + m, 0);
+
+        // Multiply each digit of 'this' with each digit of 'b'
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                v[i + j] += digits[i] * b.digits[j];
+            }
+        }
+
+        // Process the vector to handle carry over
+        int totalDigits = n + m;
+        int carry = 0;
+        // Resize our internal digits string to accommodate the maximum possible size.
+        digits.resize(totalDigits);
+        for (int i = 0; i < totalDigits; i++) {
+            int sum = v[i] + carry;
+            v[i] = sum % 10;
+            carry = sum / 10;
+            digits[i] = v[i];
+        }
+
+        // Remove any extra leading zeros (most-significant digits) if present.
+        for (int i = totalDigits - 1; i >= 1 && digits[i] == 0; i--) {
+            digits.pop_back();
+        }
+        return *this;
+    }
+
+    // Returns a new BigInt that is the product of this and b.
+    BigInt operator*(const BigInt &b) const {
+        BigInt temp(*this);
+        temp *= b;
+        return temp;
+    }
+
+    
 
 };
 
