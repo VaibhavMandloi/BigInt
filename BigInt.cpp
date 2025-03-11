@@ -238,10 +238,189 @@ public:
         return temp;
     }
 
-    
+     // --- Division Operators ---
+    // In-place division: this = this / b (quotient)
+    BigInt &operator/=(const BigInt &b) {
+        if (b.isNull())
+            throw invalid_argument("Arithmetic Error: Division By 0");
+
+        if (*this < b) {
+            *this = BigInt();
+            return *this;
+        }
+
+        if (*this == b) {
+            *this = BigInt(1);
+            return *this;
+        }
+
+        int n = digits.size(), m = b.length();
+        vector<int> quotient(n, 0);  // Temporary storage for quotient digits
+        BigInt t;  // Temporary BigInt for holding parts of the dividend
+
+        int pos; // 'pos' will be used as our digit index
+        // Find the first position where t * 10 + next_digit >= b.
+        for (pos = n - 1; pos >= 0 && (t * 10 + digits[pos]) < b; pos--) {
+            t *= 10;
+            t += BigInt((unsigned long long)digits[pos]);  // Add the current digit
+        }
+
+        int qIndex = 0;  // To count the number of quotient digits
+        // Now process the remaining digits
+        for (; pos >= 0; pos--) {
+            t = t * 10 + BigInt((unsigned long long)digits[pos]);
+            int count;
+            // Find the largest count such that (count * b) <= t
+            for (count = 9; (BigInt((unsigned long long)count) * b) > t; count--);
+            t -= BigInt((unsigned long long)count) * b;
+            quotient[qIndex++] = count;
+        }
+        // The quotient digits are currently in reverse order.
+        digits.resize(quotient.size());
+        for (int i = 0; i < qIndex; i++) {
+            digits[i] = quotient[qIndex - i - 1];
+        }
+        digits.resize(qIndex);
+        return *this;
+    }
+
+    // Returns a new BigInt that is the quotient of this / b.
+    BigInt operator/(const BigInt &b) const {
+        BigInt temp(*this);
+        temp /= b;
+        return temp;
+    }
+
+    // --- Modulus Operators ---
+    // In-place modulus: this = this % b (remainder)
+    BigInt &operator%=(const BigInt &b) {
+        if (b.isNull())
+            throw invalid_argument("Arithmetic Error: Division By 0");
+
+        if (*this < b)
+            return *this;  // Remainder is 'this' if 'this' is smaller than b
+
+        if (*this == b) {
+            *this = BigInt();
+            return *this;
+        }
+
+        int n = digits.size(), m = b.length();
+        vector<int> dummy(n, 0);  // Unused here except for size; same as in division
+        BigInt t;  // Temporary BigInt to hold division steps
+
+        int pos;
+        for (pos = n - 1; pos >= 0 && (t * 10 + digits[pos]) < b; pos--) {
+            t *= 10;
+            t += BigInt((unsigned long long)digits[pos]);
+        }
+        for (; pos >= 0; pos--) {
+            t = t * 10 + BigInt((unsigned long long)digits[pos]);
+            int count;
+            for (count = 9; (BigInt((unsigned long long)count) * b) > t; count--);
+            t -= BigInt((unsigned long long)count) * b;
+            // The actual quotient is not used here since we only want the remainder.
+        }
+        *this = t;
+        return *this;
+    }
+
+    // Returns a new BigInt that is the remainder when this is divided by b.
+    BigInt operator%(const BigInt &b) const {
+        BigInt temp(*this);
+        temp %= b;
+        return temp;
+    }
+
+    // --- Exponentiation Operators ---
+    // In-place exponentiation: this = this ^ b
+    // Uses exponentiation by squaring.
+    BigInt &operator^=(const BigInt &b) {
+        BigInt Exponent(b);    // Copy the exponent
+        BigInt Base(*this);    // Copy the base
+        *this = BigInt(1);     // Initialize result as 1
+
+        // While the exponent is not 0
+        while (!Exponent.isNull()) {
+            // If the least significant digit is odd, multiply result by Base.
+            if (Exponent[0] & 1)
+                *this *= Base;
+            Base *= Base;  // Square the base
+            divide_by_2(Exponent);  // Divide the exponent by 2 (see helper function below)
+        }
+        return *this;
+    }
+
+    // Returns a new BigInt that is the result of this raised to the power of b.
+    BigInt operator^(const BigInt &b) const {
+        BigInt temp(*this);
+        temp ^= b;
+        return temp;
+    }
+
+    // --- Helper: Divide a BigInt by 2 (used in exponentiation) ---
+    // This function divides a BigInt by 2, modifying it in-place.
+    void divide_by_2(BigInt &num) {
+        int carry = 0;
+        for (int i = num.digits.size() - 1; i >= 0; i--) {
+            int current = num.digits[i] + carry * 10;
+            num.digits[i] = current / 2;
+            carry = current % 2;
+        }
+        // Remove any leading zero if present
+        while (num.digits.size() > 1 && num.digits.back() == 0)
+            num.digits.pop_back();
+    }
+
+    // --- Input/Output Operators (as friend functions) ---
+    // We still define these as friend functions since ostream and istream are not part of BigInt.
+    friend ostream &operator<<(ostream &out, const BigInt &a) {
+        // Print digits in reverse order to display the number correctly.
+        for (int i = a.digits.size() - 1; i >= 0; i--)
+            out << char(a.digits[i] + '0');
+        return out;
+    }
+
+    friend istream &operator>>(istream &in, BigInt &a) {
+        string s;
+        in >> s;
+        a = BigInt(s);
+        return in;
+    }
 
 };
 
 int main(){
+    // Test case 1: Basic addition
+    BigInt num1;
+    BigInt num2;
+    cout << "Enter first number: ";
+    cin>>num1;
+    
+    cout << "Enter Second number: ";
+    cin>>num2;
+
+    BigInt sum = num1 + num2;
+    
+    cout << "Sum: "<<sum<<endl;
+    
+
+    // Test case 2: Basic subtraction
+    BigInt diff = num1 - num2;
+    cout << "Difference: "<<diff<<endl;
+
+    // Test case 3: Multiplication
+    BigInt product = num1 * num2;
+    std::cout << "Product: "<<product<<endl;
+    
+
+    // Test case 4: Division
+    BigInt quotient = num1 / num2;
+    std::cout << "Quotient: "<<quotient<<endl;
+    
+
+    // Test case 5: Modulus (Remainder)
+    BigInt remainder = num1 % num2;
+    std::cout << "Remainder: "<<remainder<<endl;
     
 }
